@@ -1,0 +1,231 @@
+---
+title: 'Tipología y ciclo de vida de los datos: PRAC2 - Limpieza y análisis de datos'
+author: "Autor: Eduardo Loza"
+date: "Junio 2020"
+output:
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=T, echo=T)
+```
+
+# Descripción del dataset
+
+El siguiente dataset que se va a utilizar extraído de Kaggle es “Titanic: Machine Learning from Disaster” , este dataset me parece bastante interesante ya que nos otorga datos sobre cuantas personas separadas por genero sobrevivieron al titanic, esta información es importante debido a que tomando tal catástrofe es necesario saber la mayor cantidad de información para tomar distintas conclusiones, por ejemplo utilizaremos este ejercicio y este dataset para responder a la pregunta si al momento de evacuar fueron primero las mujeres y niños o evacuaron por la clase a la que pertenecían las personas.
+
+
+# Integración y selección de los datos de interés a analizar.
+
+En este apartado realizaremos el ingreso de los datos, y nos enfocaremos en los que van a ser mas necesarios analizar:
+
+Primero vamos a cargar los datos:
+
+```{r message= FALSE, warning=FALSE}
+data<-read.csv("./titanic.csv",header=T,sep=",")
+attach(data)
+```
+utilizamos en la funcion read el sep="," debido a que es el separador por el cual esta dividido el data set, asi que empezaremos haciendo un breve análisis de los datos ya que nos interesa tener una idea general de los datos que disponemos. Por ello, primero calcularemos las dimensiones de nuestra base de datos y analizaremos qué tipos de atributos tenemos.
+
+```{r}
+dim(data)
+```
+Para lograr calcular las dimensiones de la base de datos utilizamos la función dim(). Obtenemos que disponemos de 2201 registros o pasajeros (filas) y 4 variables (columnas). 
+
+
+Ahora vamos a utilizar la función str() y podemos observar que tenemos cuatro variables categóricas o discretas, es decir, toman valores en un conjunto finito. La variable CLASS hace referencia a la clase en la que viajaban los pasajeros (1ª, 2ª, 3ª o crew), AGE determina si era adulto o niño (Adulto o Menor), la variable SEX si era hombre o mujer (Hombre o Mujer) y la última variable (SURVIVED) informa si el pasajero murió o sobrevivió en el accidente (Muere o Sobrevive).
+
+```{r}
+str(data)
+```
+
+# Limpieza de los datos.
+
+## ¿Los datos contienen ceros o elementos vacíos? ¿Cómo gestionarías cada uno de estos casos?
+
+
+ya que nos interesa saber si existen valores nulos (elementos vacíos) es recomendable empezar el análisis con una visión general de las variables. Mostraremos para cada atributo la cantidad de valores perdidos mediante la función summary.  
+
+```{r}
+summary(data)
+```
+
+Como podemos observar tenemos valores vacios, y en el caso de SEX tenemos datos que necesitan ser normalizados tambien, asi que primero realizaremos un summary solo de SEX, y luego vamos a normalizar estos datos, debido a que la cantidad de hombres es mucho mayor al de mujeres, los datos vacios que tenemos los ubicaremos con el valor de Hombre de la siguiente manera:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+summary(data$SEX)
+
+# Al tener muchos valores distintos vamos a normalizar reemplazando el valor erroneo con el correcto
+data$SEX <- as.character(data$SEX)
+data$SEX[data$SEX == 'H'] <- "Hombre"
+data$SEX[data$SEX == ''] <- "Hombre"
+data$SEX[data$SEX == 'M'] <- "Mujer"
+data$SEX <- as.factor(data$SEX)
+summary(data$SEX)
+```
+De esta manera podemos observar que los datos ahora estan correctos sin datos vacios o sin normalizar.
+
+## Identificación y tratamiento de valores extremos.
+
+Para visualizar los valores extremos podemos utilizar el comando summary y obtenemos los siguientes datos:.  
+
+```{r}
+summary(data)
+```
+
+Al no tener valores numéricos o distintos valores que nos permite calcular extremos, no podemos realizar un tratamiento de los mismos.
+
+# Análisis de los datos.
+Aprovechando que tenemos distintos paquetes al utilizar R, vamos a utilizarggplot2, gridExtra y grid de R.
+Para poder obtener una mejor visualizació de los datos y poder analizar los datos de mejor manera.
+
+```{r}
+if(!require(ggplot2)){
+    install.packages('ggplot2', repos='http://cran.us.r-project.org')
+    library(ggplot2)
+}
+if(!require(grid)){
+    install.packages('grid', repos='http://cran.us.r-project.org')
+    library(grid)
+}
+if(!require(gridExtra)){
+    install.packages('gridExtra', repos='http://cran.us.r-project.org')
+    library(gridExtra)
+}
+
+```
+
+## Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
+
+Nos interesa describir la relación entre la supervivencia y cada uno de las variables mencionadas anteriormente, entonces graficaremos mediante diagramas de barras la cantidad de muertos y supervivientes según la clase en la que viajaban, la edad o el sexo.  
+Para obtener los datos que estamos graficando utilizaremos el comando table para dos variables que nos proporciona una tabla de contingencia.
+
+```{r}
+grid.newpage()
+plotbyClass<-ggplot(data,aes(CLASS,fill=SURVIVED))+geom_bar() +labs(x="Class", y="Passengers")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("blue","#008000"))+ggtitle("Sobrevivio por clase")
+plotbyAge<-ggplot(data,aes(AGE,fill=SURVIVED))+geom_bar() +labs(x="Age", y="Passengers")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("blue","#008000"))+ggtitle("Sobrevivio por edad")
+plotbySex<-ggplot(data,aes(SEX,fill=SURVIVED))+geom_bar() +labs(x="Sex", y="Passengers")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("blue","#008000"))+ggtitle("Sobrevivio por sexo")
+grid.arrange(plotbyClass,plotbyAge,plotbySex,ncol=2)
+
+```
+
+Con los graficos podemos sacar distintas conclusiones por ejemplo, la cantidad que sobrevivieron es similar en hombres y mujeres (hombres: 367 y mujeres 344), teniendo en cuenta que viajaban muchos mas hombres que mujeres, en cuanto a la clase, los que viajaron en primera clase fueron los que más sobrevivieron, teniendo en cuenta que un porcentaje muy pequeño de niños sobrevivió.
+
+
+## Comprobación de la normalidad y homogeneidad de la varianza.
+
+para la homogeneidad de varianza o homocedasticidad tenemos que tener en cuenta que si los grupos con tamaños muestrales pequeños son los que tienen mayor varianza, la probabilidad real de cometer errores de hipotesis sera menor, para realizar un grafico sobre este test de varianza utilizaremos el ggplot
+
+```{r}
+ggplot(data, aes(x = AGE, y = SURVIVED, colour = CLASS)) +
+  geom_boxplot() +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+podemos tener en cuenta la homogeneidad de la varianza es mucho menor ya que estamos calculando entre valores discretos.
+
+## Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis, correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.
+
+
+para responder a la pregunta inicial y tener valores estadicticos reales utilizando variables discretas la mejor manera es mediante un arbol de decisiones, el cual toma en cuenta cada hipótesis para poder analizar qué tipo de pasajero del Titanic tenía probabilidades de sobrevivir o no. Por lo tanto, la variable por la que clasificaremos es el campo de si el pasajero sobrevivió o no. De todas maneras, al imprimir las primeras (con head) y últimas 10 (con tail) filas nos damos cuenta de que los datos están ordenados.
+
+```{r}
+head(data,10)
+tail(data,10)
+```
+
+Una de las tecnicas utilizadas en el proceso estadistico para estimar las relaciones entre los datos es la regresión, por lo que es necesario realizar un data_random para poder obtener datos que podamos utilizar en el proceso.
+
+```{r}
+set.seed(1)
+data_random <- data[sample(nrow(data)),]
+```
+
+Ahora vamos a proceder a creas dos conjuntos de datos, uno de entrenamiento y uno de pruebas, utilizando el campo de si la persona sobrevivio como variable de clasificación
+
+```{r}
+set.seed(666)
+y <- data_random[,4] 
+X <- data_random[,1:3] 
+```
+
+
+Podemos elegir el subconjunto de entrenamiento y de prueba de diversas maneras. La primer opción consiste en calcular a cuántas filas corresponde dos tercios de los datos (2*2201/3=1467) y dividir "manualmente" el conjunto.
+
+```{r}
+trainX <- X[1:1467,]
+trainy <- y[1:1467]
+testX <- X[1468:2201,]
+testy <- y[1468:2201]
+```
+
+En la segunda opción podemos crear directamente un rango.
+
+```{r}
+indexes = sample(1:nrow(data), size=floor((2/3)*nrow(data)))
+trainX<-X[indexes,]
+trainy<-y[indexes]
+testX<-X[-indexes,]
+testy<-y[-indexes]
+```
+
+Con esto tenemos los datos suficientes y necesarios para realizar un arbol de decisiones
+
+#	Representación de los resultados a partir de tablas y gráficas.
+
+Se crea el árbol de decisión usando los datos de entrenamiento:
+
+```{r}
+model <- C50::C5.0(trainX, trainy,rules=TRUE )
+summary(model)
+```
+Errors muestra el número y porcentaje de casos mal clasificados en el subconjunto de entrenamiento. El árbol obtenido clasifica erróneamente 304 de los 1467 casos dados, una tasa de error del 20.7%.
+
+A continuación mostramos el árbol obtenido.
+
+```{r}
+model <- C50::C5.0(trainX, trainy)
+plot(model)
+```
+
+
+Una vez tenemos el modelo, podemos comprobar su calidad prediciendo la clase para los datos de prueba que nos hemos reservado al principio. 
+
+```{r}
+predicted_model <- predict( model, testX, type="class" )
+print(sprintf("La precisión del árbol es: %.4f %%",100*sum(predicted_model == testy) / length(predicted_model)))
+```
+
+Cuando hay pocas clases, la calidad de la predicción se puede analizar mediante una matriz de confusión que identifica los tipos de errores cometidos. 
+
+```{r}
+mat_conf<-table(testy,Predicted=predicted_model)
+mat_conf
+```
+
+#	Resolución del problema. A partir de los resultados obtenidos, ¿cuáles son las conclusiones? ¿Los resultados permiten responder al problema?
+
+
+A partir del árbol de decisión que generamos, se pueden extraer las siguientes reglas de decisión:
+
+SEX = "Hombre" → Muere. Validez: 80,2%
+
+CLASS = "3a" → Muere. Validez: 75.1%
+
+CLASS "1ª", "2ª" o "Crew" y SEX = "Mujer" → Sobrevive. Validez: 90,5%
+
+Por tanto podemos concluir con el conocimiento extraído que al momento de evacuar si fueron primero los niños y las mujeres a excepción de la 3ra clase, lastimosamente sea la edad o el sexo que sea, mientras estuviera en 3ra clase tenia mayor probabilidad de morir frente al resto del barco.
+
+Efectivamente los resultados realizar su cometido de responder la pregunta inicial mediante procesos estadisticos.
+y cruzado con el análisis visual se resume en "las mujeres y los niños primero a excepción de que fueras de 3ª clase".
